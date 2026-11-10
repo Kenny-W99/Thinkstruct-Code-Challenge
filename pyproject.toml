@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "patent-search"
+version = "0.1.0"
+description = "Hybrid (keyword + semantic) patent search with metadata filters - Thinkstruct coding challenge"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "sentence-transformers>=3.0",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "httpx>=0.27"]
+poc = ["psycopg[binary]>=3.2"]
+
+[project.scripts]
+patent-search = "patent_search.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -m 'not slow'"
+markers = [
+    "realdata: needs the real dataset in data/ (skipped if missing)",
+    "slow: downloads or runs a real ML model",
+    "postgres: needs a running Postgres (set PATENT_PG_DSN; skipped otherwise)",
+]

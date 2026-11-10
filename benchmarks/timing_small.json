@@ -1,0 +1,190 @@
+{
+  "meta": {
+    "embedder": "BAAI/bge-small-en-v1.5",
+    "dim": 384,
+    "chunking": {
+      "include_description": true,
+      "title_context": true,
+      "max_words": 250,
+      "overlap": 50
+    },
+    "n_patents": 640,
+    "n_passages": 32929,
+    "passages_by_kind": {
+      "abstract": 645,
+      "claim": 10563,
+      "description": 21721
+    },
+    "build_seconds": {
+      "chunk": 0.205,
+      "bm25": 1.07,
+      "embed": 105.91,
+      "load": 0.71,
+      "total": 122.737
+    },
+    "created": "2026-11-10T05:21:49+00:00",
+    "dataset": "small",
+    "data_dir": "data/small",
+    "load_report": {
+      "files_read": 64,
+      "bad_files": [],
+      "records_read": 640,
+      "bad_records": 0,
+      "duplicates_dropped": 0,
+      "kept": 640,
+      "no_description": 119,
+      "no_cpc": 0,
+      "no_title": 0,
+      "seconds": 0.7103722089996154
+    }
+  },
+  "query_embedding": {
+    "median_ms": 8.675416498590494,
+    "p95_ms": 9.950291001587175
+  },
+  "rows": [
+    {
+      "case": "no filter",
+      "strategy": "-",
+      "patents_passing": 640,
+      "passages_scored": 32929,
+      "median_ms": 1.9640000000000002,
+      "p95_ms": 2.2800000000000002,
+      "median_filter_ms": 0.001,
+      "median_scoring_ms": 0.8955,
+      "avg_results": 10.0
+    },
+    {
+      "case": "CPC B60B (wheels)",
+      "strategy": "pre",
+      "patents_passing": 298,
+      "passages_scored": 14352,
+      "median_ms": 1.8305,
+      "p95_ms": 2.177,
+      "median_filter_ms": 0.064,
+      "median_scoring_ms": 0.7475,
+      "avg_results": 10.0
+    },
+    {
+      "case": "CPC B60B (wheels)",
+      "strategy": "post",
+      "patents_passing": 298,
+      "passages_scored": 32929,
+      "median_ms": 3.2055000000000002,
+      "p95_ms": 3.919,
+      "median_filter_ms": 0.7295,
+      "median_scoring_ms": 1.1255,
+      "avg_results": 10.0
+    },
+    {
+      "case": "CPC G06F (computing)",
+      "strategy": "pre",
+      "patents_passing": 0,
+      "passages_scored": 0,
+      "median_ms": 0.016,
+      "p95_ms": 0.026000000000000002,
+      "median_filter_ms": 0.008,
+      "median_scoring_ms": 0.006,
+      "avg_results": 0.0
+    },
+    {
+      "case": "CPC G06F (computing)",
+      "strategy": "post",
+      "patents_passing": 0,
+      "passages_scored": 32929,
+      "median_ms": 2.1079999999999997,
+      "p95_ms": 2.271,
+      "median_filter_ms": 0.536,
+      "median_scoring_ms": 1.1124999999999998,
+      "avg_results": 0.0
+    },
+    {
+      "case": "CPC B60C + keyword 'tread'",
+      "strategy": "pre",
+      "patents_passing": 152,
+      "passages_scored": 9400,
+      "median_ms": 1.5985,
+      "p95_ms": 1.82,
+      "median_filter_ms": 0.057,
+      "median_scoring_ms": 0.6335,
+      "avg_results": 10.0
+    },
+    {
+      "case": "CPC B60C + keyword 'tread'",
+      "strategy": "post",
+      "patents_passing": 152,
+      "passages_scored": 32929,
+      "median_ms": 3.5845000000000002,
+      "p95_ms": 4.978,
+      "median_filter_ms": 1.4104999999999999,
+      "median_scoring_ms": 1.1345,
+      "avg_results": 10.0
+    },
+    {
+      "case": "keyword 'vehicle'",
+      "strategy": "pre",
+      "patents_passing": 204,
+      "passages_scored": 9798,
+      "median_ms": 2.278,
+      "p95_ms": 2.585,
+      "median_filter_ms": 0.022,
+      "median_scoring_ms": 1.185,
+      "avg_results": 10.0
+    },
+    {
+      "case": "keyword 'vehicle'",
+      "strategy": "post",
+      "patents_passing": 204,
+      "passages_scored": 32929,
+      "median_ms": 4.4455,
+      "p95_ms": 5.024,
+      "median_filter_ms": 1.9965,
+      "median_scoring_ms": 1.127,
+      "avg_results": 10.0
+    },
+    {
+      "case": "title contains 'wheel'",
+      "strategy": "pre",
+      "patents_passing": 189,
+      "passages_scored": 9560,
+      "median_ms": 2.358,
+      "p95_ms": 2.7270000000000003,
+      "median_filter_ms": 0.074,
+      "median_scoring_ms": 1.1735,
+      "avg_results": 10.0
+    },
+    {
+      "case": "title contains 'wheel'",
+      "strategy": "post",
+      "patents_passing": 189,
+      "passages_scored": 32929,
+      "median_ms": 2.982,
+      "p95_ms": 3.402,
+      "median_filter_ms": 0.512,
+      "median_scoring_ms": 1.1255,
+      "avg_results": 10.0
+    },
+    {
+      "case": "CPC B60 + from 2024",
+      "strategy": "pre",
+      "patents_passing": 640,
+      "passages_scored": 32929,
+      "median_ms": 2.0655,
+      "p95_ms": 2.275,
+      "median_filter_ms": 0.121,
+      "median_scoring_ms": 0.9069999999999999,
+      "avg_results": 10.0
+    },
+    {
+      "case": "CPC B60 + from 2024",
+      "strategy": "post",
+      "patents_passing": 640,
+      "passages_scored": 32929,
+      "median_ms": 6.226,
+      "p95_ms": 6.8549999999999995,
+      "median_filter_ms": 3.5355,
+      "median_scoring_ms": 1.142,
+      "avg_results": 10.0
+    }
+  ]
+}

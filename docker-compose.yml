@@ -1,0 +1,75 @@
+# Everything runs here:
+#
+#   docker compose up --build          web app  http://localhost:8080
+#                                      API      http://localhost:8000/docs
+#                                      Postgres localhost:5432 (Part 2 PoC)
+#
+#   docker compose run --rm api pytest            # the Python tests, in the container
+#   docker compose --profile poc run --rm poc     # Part 2 PoC: load patents into Postgres
+#
+# The first `up` builds the search index into the `artifacts` volume. Docker
+# on a Mac has no GPU, so embedding the 33k passages on CPU takes a while
+# (see README); later starts reuse it and are ready in seconds.
+
+name: patent-search
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # A named volume by default. To reuse an index built on the host
+      # (python cli.py build), run with ARTIFACTS=./artifacts docker compose up
+      - ${ARTIFACTS:-artifacts}:/artifacts
+
+  web:
+    build: ./web
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      # Local demo database only; these are not real credentials.
+      POSTGRES_USER: patents
+      POSTGRES_PASSWORD: patents
+      POSTGRES_DB: patents
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U patents -d patents"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Part 2 proof of concept: batch files -> ingest jobs -> patents + passages
+  # (with embeddings) in Postgres, then a filter + vector search in SQL.
+  # Uses the api image (same code and models). By default it loads the bundled
+  # small data; to load the large data, mount it and pass --dataset large:
+  #   LARGE_DATA=~/Downloads/coding_challenge_data docker compose --profile poc run --rm poc \
+  #       python cli.py pg-load --dataset large --max-files 5
+  poc:
+    profiles: ["poc"]
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    environment:
+      PATENT_PG_DSN: postgresql://patents:patents@db:5432/patents
+      PATENT_DATA_LARGE: /large
+    volumes:
+      - ${LARGE_DATA:-./data}:/large:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["python", "cli.py", "pg-load", "--dataset", "small"]
+
+volumes:
+  artifacts:
+  pgdata:

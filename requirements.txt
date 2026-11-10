@@ -1,0 +1,16 @@
+# Exact versions used to produce the results in the README.
+# Install with:  pip install -r requirements.txt && pip install -e .
+# (Docker installs the CPU-only torch build first; see docker/api.Dockerfile.)
+numpy==2.5.4
+scipy==1.18.1
+torch==2.15.0
+transformers==5.22.2
+huggingface-hub==2.4.0
+sentence-transformers==6.2.0
+fastapi==0.162.2
+uvicorn==0.54.0
+psycopg[binary]==3.3.8  # Part 2 PoC (Postgres + pgvector)
+
+# tests
+pytest==9.2.0
+httpx==0.28.1

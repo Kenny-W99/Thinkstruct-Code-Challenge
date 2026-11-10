@@ -1,0 +1,96 @@
+/* Design tokens. The look borrows from printed patent documents: warm paper,
+   black ink, a navy "office" blue, and a vermilion stamp for rank changes. */
+
+:root {
+  --font-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --paper: #f5f1e8;
+  --paper-deep: #ece6d8;
+  --card: #fffcf5;
+  --ink: #1d1c1a;
+  --ink-soft: #4b4740;
+  --ink-faint: #857f73;
+  --rule: #dcd4c3;
+  --rule-strong: #bfb49e;
+  --navy: #1f3a5f;
+  --on-navy: #f5f1e8;
+  --stamp: #b23c1b;
+  --stamp-soft: rgba(178, 60, 27, 0.09);
+  --mark: #f1d77e;
+  --mark-ink: #1d1c1a;
+  --error-bg: #f8e3da;
+  --error-ink: #7a2410;
+
+  --kind-abstract: #1f3a5f;
+  --kind-claim: #8a4513;
+  --kind-description: #3d6047;
+
+  --seg-embed: #a89c84;
+  --seg-filter: #c9a227;
+  --seg-bm25: #1f3a5f;
+  --seg-dense: #5b86b5;
+  --seg-fuse: #8572a8;
+  --seg-post_filter: #d98a5f;
+  --seg-group: #9a958c;
+  --seg-rerank: #b23c1b;
+
+  --radius: 3px;
+  --shadow-drawer: -24px 0 60px rgba(29, 28, 26, 0.18);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #131417;
+    --paper-deep: #1a1c20;
+    --card: #1d1f24;
+    --ink: #ece6da;
+    --ink-soft: #bfb8aa;
+    --ink-faint: #8a8478;
+    --rule: #2d3036;
+    --rule-strong: #464a52;
+    --navy: #93b4dc;
+    --on-navy: #131417;
+    --stamp: #e8795a;
+    --stamp-soft: rgba(232, 121, 90, 0.12);
+    --mark: rgba(230, 190, 80, 0.34);
+    --mark-ink: #fff6dc;
+    --error-bg: #3a1f18;
+    --error-ink: #f3b8a4;
+    --kind-abstract: #93b4dc;
+    --kind-claim: #e0a072;
+    --kind-description: #8fbf9c;
+    --seg-bm25: #93b4dc;
+    --seg-dense: #5b86b5;
+    --shadow-drawer: -24px 0 60px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #131417;
+  --paper-deep: #1a1c20;
+  --card: #1d1f24;
+  --ink: #ece6da;
+  --ink-soft: #bfb8aa;
+  --ink-faint: #8a8478;
+  --rule: #2d3036;
+  --rule-strong: #464a52;
+  --navy: #93b4dc;
+  --on-navy: #131417;
+  --stamp: #e8795a;
+  --stamp-soft: rgba(232, 121, 90, 0.12);
+  --mark: rgba(230, 190, 80, 0.34);
+  --mark-ink: #fff6dc;
+  --error-bg: #3a1f18;
+  --error-ink: #f3b8a4;
+  --kind-abstract: #93b4dc;
+  --kind-claim: #e0a072;
+  --kind-description: #8fbf9c;
+  --seg-bm25: #93b4dc;
+  --seg-dense: #5b86b5;
+  --shadow-drawer: -24px 0 60px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}

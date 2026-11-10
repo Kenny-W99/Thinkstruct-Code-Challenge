@@ -1,0 +1,22 @@
+# data: everything ignored except the small zip (3 MB), which ships with the repo
+data/*
+!data/patent_data_small.zip
+
+# generated
+artifacts/
+
+# python
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+
+# node
+node_modules/
+web/dist/
+
+# os / editors
+.DS_Store
+.vscode/
+.idea/
+.claude/
