@@ -20,3 +20,7 @@ web/dist/
 .vscode/
 .idea/
 .claude/
+
+# local notes, kept out of the repo
+plan.md
+VIDEO_SCRIPT.md
