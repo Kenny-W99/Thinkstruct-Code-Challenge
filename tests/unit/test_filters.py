@@ -95,6 +95,17 @@ def test_invalid_cpc_raises():
         compile_filters(SearchFilters(cpc=["60B"]))
 
 
+@pytest.mark.parametrize("keyword", ["the", "B60B", "42", "a of"])
+def test_keyword_with_no_searchable_word_raises(keyword):
+    # Silently dropping it would return unfiltered results.
+    with pytest.raises(ValueError, match="no searchable word"):
+        compile_filters(SearchFilters(keywords=["tire", keyword]))
+
+
+def test_blank_keywords_are_ignored_and_partly_searchable_ones_kept():
+    assert compile_filters(SearchFilters(keywords=["  ", "the tire"])).keyword_terms == ("tire",)
+
+
 def test_backwards_date_range_raises():
     with pytest.raises(ValueError, match="after"):
         compile_filters(SearchFilters(date_from=date(2024, 3, 1), date_to=date(2024, 2, 1)))

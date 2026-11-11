@@ -59,9 +59,18 @@ def _norm_title(title: str) -> str:
 
 
 def compile_filters(f: SearchFilters) -> CompiledFilters:
-    """Raises ValueError for a bad classification code or a backwards date range."""
+    """Raises ValueError for a bad classification code, a backwards date range,
+    or a keyword with no searchable word in it."""
     if f.date_from and f.date_to and f.date_from > f.date_to:
         raise ValueError(f"date_from ({f.date_from}) is after date_to ({f.date_to})")
+    for kw in f.keywords:
+        # Without this, "the" or "B60B" would silently filter nothing out.
+        if kw.strip() and not tokenize(kw):
+            raise ValueError(
+                f"Keyword {kw!r} has no searchable word: common words (like 'the') and words "
+                "under 2 letters are not indexed, and numbers are ignored. "
+                "For a classification code, use the classification filter."
+            )
     terms = tuple(dict.fromkeys(t for kw in f.keywords for t in tokenize(kw)))
     return CompiledFilters(
         cpc=tuple(parse_cpc_query(c) for c in f.cpc if c.strip()),

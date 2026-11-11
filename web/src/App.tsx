@@ -15,6 +15,15 @@ import { fromParams, toParams, type SearchState } from "./lib/query";
 // Must match RERANK_AUTO_MAX_WORDS in src/patent_search/config.py.
 export const RERANK_AUTO_MAX_WORDS = 40;
 const TOP_K_OPTIONS = [10, 20, 50];
+// Typed filters (title, dates) re-run the search after this much quiet.
+export const TYPING_PAUSE_MS = 400;
+// Health and facets are retried this often until the API answers (it may still be starting).
+const API_RETRY_MS = 3000;
+
+/** The menu's choices, plus the current value if a shared URL set another one (e.g. top_k=30). */
+export function topKOptions(current: number): number[] {
+  return TOP_K_OPTIONS.includes(current) ? TOP_K_OPTIONS : [...TOP_K_OPTIONS, current].sort((a, b) => a - b);
+}
 
 function readUrl(): SearchState {
   return fromParams(new URLSearchParams(window.location.search));
@@ -29,13 +38,15 @@ export default function App({ client = defaultApi }: { client?: Api }) {
   const [form, setForm] = useState<SearchState>(readUrl);
   const [open, setOpen] = useState<{ doc: string; anchor?: string } | null>(null);
   const { run, reset, status, data, error, pending } = useSearch(client.search);
-  const health = useResource("health", client.health);
-  const facets = useResource("facets", client.facets);
+  const health = useResource("health", client.health, API_RETRY_MS);
+  const facets = useResource("facets", client.facets, API_RETRY_MS);
   const hasSearched = useRef(false);
+  const typingTimer = useRef<number | undefined>(undefined);
 
   /** Put the state in the address bar and run it (an empty query clears the results). */
   const go = useCallback(
     (next: SearchState, history: "push" | "replace") => {
+      window.clearTimeout(typingTimer.current); // this search replaces any that was waiting
       const qs = toParams(next).toString();
       window.history[history === "push" ? "pushState" : "replaceState"](null, "", qs ? `?${qs}` : window.location.pathname);
       hasSearched.current = Boolean(next.q.trim());
@@ -56,14 +67,22 @@ export default function App({ client = defaultApi }: { client?: Api }) {
       else reset();
     };
     window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      window.clearTimeout(typingTimer.current);
+    };
     // Once on mount: read the URL and listen for back/forward.
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /** Filters and options re-run the current search right away. */
-  const onOptions = (next: SearchState) => {
+  /** Filters and options re-run the current search: right away, or, for typed
+   * filters (title, dates), once typing pauses. Without the pause every keystroke
+   * would start a search, and the server finishes cancelled reranks anyway. */
+  const onOptions = (next: SearchState, { debounce = false }: { debounce?: boolean } = {}) => {
     setForm(next);
-    if (hasSearched.current && next.q.trim()) go(next, "replace");
+    window.clearTimeout(typingTimer.current);
+    if (!hasSearched.current || !next.q.trim()) return;
+    if (debounce) typingTimer.current = window.setTimeout(() => go(next, "replace"), TYPING_PAUSE_MS);
+    else go(next, "replace");
   };
 
   const modes = health.data?.modes ?? ["hybrid", "bm25", "dense"];
@@ -111,7 +130,7 @@ export default function App({ client = defaultApi }: { client?: Api }) {
           <label className="topk">
             <span>Show</span>
             <select value={form.topK} onChange={(e) => onOptions({ ...form, topK: Number(e.target.value) })}>
-              {TOP_K_OPTIONS.map((k) => (
+              {topKOptions(form.topK).map((k) => (
                 <option key={k} value={k}>
                   {k}
                 </option>
@@ -128,18 +147,19 @@ export default function App({ client = defaultApi }: { client?: Api }) {
       <div className="layout">
         <FilterPanel state={form} facets={facets.data} onChange={onOptions} />
 
-        <main className={`results ${loading && data ? "is-stale" : ""}`} aria-busy={loading}>
+        <main className={`results ${(loading || error) && data ? "is-stale" : ""}`} aria-busy={loading}>
           {loading && (
             <div className="progress" role="status">
               <span className="progress-bar" />
               {pending && willRerank(pending, rerankerLoaded)
-                ? "Searching… phase 2 reads the top 30 patents with a cross-encoder (a few seconds on CPU)."
+                ? `Searching… phase 2 reads the top ${pending.rerankCandidates} patents with a cross-encoder (a few seconds on CPU).`
                 : "Searching…"}
             </div>
           )}
           {error && (
             <p className="error-banner" role="alert">
               {error}
+              {data && <span className="error-stale"> The results below are from the previous search.</span>}
             </p>
           )}
           {data ? (

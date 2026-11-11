@@ -7,7 +7,8 @@ import { TagInput } from "./TagInput";
 interface Props {
   state: SearchState;
   facets: Facets | null;
-  onChange: (next: SearchState) => void;
+  /** debounce: the change comes from typing, so the search can wait for a pause. */
+  onChange: (next: SearchState, options?: { debounce?: boolean }) => void;
 }
 
 const KIND_LABEL: Record<Kind, string> = { abstract: "Title + abstract", claim: "Claims", description: "Description" };
@@ -18,7 +19,7 @@ function toggle<T>(list: T[], item: T): T[] {
 }
 
 export function FilterPanel({ state, facets, onChange }: Props) {
-  const set = (patch: Partial<SearchState>) => onChange({ ...state, ...patch });
+  const set = (patch: Partial<SearchState>, debounce = false) => onChange({ ...state, ...patch }, { debounce });
   const count = activeFilterCount(state);
   const subclasses = facets?.subclasses.slice(0, TOP_SUBCLASSES) ?? [];
   const typedPrefixes = state.cpc.filter((c) => !subclasses.some((s) => s.code === c));
@@ -68,7 +69,7 @@ export function FilterPanel({ state, facets, onChange }: Props) {
       <div className="field">
         <label className="field-label">
           Title
-          <input type="text" value={state.title} placeholder="contains…" onChange={(e) => set({ title: e.target.value })} />
+          <input type="text" value={state.title} placeholder="contains…" onChange={(e) => set({ title: e.target.value }, true)} />
         </label>
         <label className="check">
           <input type="checkbox" checked={state.titleExact} onChange={(e) => set({ titleExact: e.target.checked })} />
@@ -85,7 +86,7 @@ export function FilterPanel({ state, facets, onChange }: Props) {
             value={state.dateFrom}
             min={facets?.date_min ?? undefined}
             max={state.dateTo || undefined}
-            onChange={(e) => set({ dateFrom: e.target.value })}
+            onChange={(e) => set({ dateFrom: e.target.value }, true)}
           />
           <span aria-hidden>–</span>
           <input
@@ -94,7 +95,7 @@ export function FilterPanel({ state, facets, onChange }: Props) {
             value={state.dateTo}
             min={state.dateFrom || undefined}
             max={facets?.date_max ?? undefined}
-            onChange={(e) => set({ dateTo: e.target.value })}
+            onChange={(e) => set({ dateTo: e.target.value }, true)}
           />
         </div>
         {facets?.date_min && (

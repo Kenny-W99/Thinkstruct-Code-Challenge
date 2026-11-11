@@ -102,6 +102,10 @@ Shows:
 - duplicates resolved by document number, and a file loaded all-or-nothing;
 - filters + vector search in the database.
 
+Doesn't (yet):
+- **heartbeat the lease.** The lease is set once, when a job is claimed. A file that takes longer than 10 minutes is claimed again by a second worker while the first is still on it. No data is lost (the second copy loses the "more text wins" upsert), but the job's counts end up as the second worker's zeros. A real worker would refresh `updated_at` from a separate connection while it works.
+- **back off between retries.** A failed file is retried right away, in the same loop. DESIGN.md §8 describes retrying later with a growing delay.
+
 The tests cover each of these:
 - [`tests/unit/test_pg_ingest.py`](../../tests/unit/test_pg_ingest.py) runs the pipeline against an in-memory store, with a broken file and a flaky embedder;
 - [`tests/integration/test_pg_store.py`](../../tests/integration/test_pg_store.py) runs against real Postgres, including two workers claiming jobs at once.

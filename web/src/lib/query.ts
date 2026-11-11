@@ -19,6 +19,7 @@ export interface SearchState {
   kinds: Kind[]; // [] = all kinds
   topK: number;
   rerank: RerankChoice;
+  rerankCandidates: number; // how many phase-1 patents the reranker reads
 }
 
 export const MODES: Mode[] = ["hybrid", "bm25", "dense"];
@@ -40,6 +41,7 @@ export const DEFAULT_STATE: SearchState = {
   kinds: [],
   topK: 10,
   rerank: "auto",
+  rerankCandidates: 30, // must match RERANK_CANDIDATES in src/patent_search/config.py
 };
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -69,12 +71,16 @@ export function toParams(s: SearchState): URLSearchParams {
   s.kinds.forEach((k) => p.append("kinds", k));
   if (s.topK !== DEFAULT_STATE.topK) p.set("top_k", String(s.topK));
   if (s.rerank !== DEFAULT_STATE.rerank) p.set("rerank", s.rerank);
+  if (s.rerankCandidates !== DEFAULT_STATE.rerankCandidates) p.set("rerank_candidates", String(s.rerankCandidates));
   return p;
 }
 
 /** Query string -> state. Anything unknown or malformed falls back to the default. */
 export function fromParams(p: URLSearchParams): SearchState {
-  const topK = Number.parseInt(p.get("top_k") ?? "", 10);
+  const count = (key: string, fallback: number) => {
+    const n = Number.parseInt(p.get(key) ?? "", 10);
+    return Number.isFinite(n) ? Math.min(Math.max(n, 1), MAX_TOP_K) : fallback;
+  };
   const date = (key: string) => {
     const v = p.get(key) ?? "";
     return DATE.test(v) ? v : "";
@@ -90,8 +96,9 @@ export function fromParams(p: URLSearchParams): SearchState {
     mode: pick(p.get("mode"), MODES, DEFAULT_STATE.mode),
     strategy: pick(p.get("strategy"), STRATEGIES, DEFAULT_STATE.strategy),
     kinds: KINDS.filter((k) => p.getAll("kinds").includes(k)),
-    topK: Number.isFinite(topK) ? Math.min(Math.max(topK, 1), MAX_TOP_K) : DEFAULT_STATE.topK,
+    topK: count("top_k", DEFAULT_STATE.topK),
     rerank: pick(p.get("rerank"), RERANK_CHOICES, DEFAULT_STATE.rerank),
+    rerankCandidates: count("rerank_candidates", DEFAULT_STATE.rerankCandidates),
   };
 }
 

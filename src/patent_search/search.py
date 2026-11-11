@@ -1,7 +1,7 @@
 """The search engine.
 
     phase 1:  query -> filters -> BM25 + embeddings -> RRF -> group by patent
-    phase 2:  (optional) cross-encoder rerank of the top ~100 patents
+    phase 2:  (optional) cross-encoder rerank of the top 30 patents (RERANK_CANDIDATES)
 
 Every stage is timed, so the CLI, API, benchmark and evaluation all report the
 same numbers.

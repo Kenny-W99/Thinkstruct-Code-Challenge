@@ -27,6 +27,12 @@ def test_web_app_uses_the_same_auto_rerank_cutoff():
 
 
 @needs_web
+def test_web_app_uses_the_same_default_rerank_candidates():
+    query = (ROOT / "web" / "src" / "lib" / "query.ts").read_text()
+    assert f"rerankCandidates: {config.RERANK_CANDIDATES}," in query
+
+
+@needs_web
 def test_web_types_list_the_same_choices_as_the_api():
     from patent_search.chunk import KINDS
     from patent_search.search import MODES, RERANK_CHOICES, STRATEGIES

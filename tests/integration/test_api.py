@@ -117,6 +117,7 @@ def test_keyword_only_server(plain_client):
         ({"q": "99999999999"}, "not in this dataset"),
         ({"q": "20240000004 claim 9"}, "no claim 9"),
         ({"q": "wheel", "date_from": "2024-03-01", "date_to": "2024-02-01"}, "after"),
+        ({"q": "wheel", "keyword": "the"}, "no searchable word"),
     ],
 )
 def test_bad_requests_are_400_with_a_message(client, params, message):

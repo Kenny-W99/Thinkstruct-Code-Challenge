@@ -35,12 +35,12 @@ There are no API keys, and the small dataset is in the repo. Pick one:
 docker compose up --build
 ```
 
-- Web app: http://localhost:8080 · API docs: http://localhost:8000/docs · Postgres for the Part 2 PoC: `localhost:5432`
+- Web app: http://localhost:8080 · API docs: http://localhost:8000/docs. Postgres for the Part 2 PoC is started separately (`docker compose up -d db`, on `127.0.0.1:5432`), so a plain `up` never needs port 5432.
 - The images take about 3.6 GB (API 2.9 GB with CPU-only PyTorch and both models baked in, Postgres 0.6 GB, web 80 MB). After the build it runs offline.
 - **The first start builds the search index inside the container, on CPU** (Docker on a Mac has no GPU). That took 14 minutes on an M3 Pro, once (progress is in `docker compose logs api`); later starts are ready in seconds. To skip the wait, build the index with local Python (option B, ~2 min on the Apple GPU), then run `ARTIFACTS=./artifacts docker compose up`.
 - Reranked searches take ~3.5–4.5 s in Docker, against ~2.5 s with local Python on the same Mac. PyTorch's Linux CPU build (which Docker uses) is slower than its macOS build; changing thread counts didn't help.
 
-**B. Local Python** (3.10+, tested on 3.12 / Apple Silicon). The first run downloads the models: about 130 MB for the embedder and 370 MB for the reranker.
+**B. Local Python** (3.12 or newer: the pinned numpy and scipy need it; tested on 3.12 / Apple Silicon). The first run downloads the models: about 130 MB for the embedder and 370 MB for the reranker.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
@@ -107,11 +107,11 @@ The React app shows what the engine does:
 - **Highlighted passages,** each labeled ("Claim 7", "Description ¶12"), with the rank it had in each retriever (`keyword #3 · meaning #1`).
 - **Phase 2:** a "▲ 4 from #5" stamp where the reranker moved a patent, and the reason when `auto` skipped reranking.
 - **Timing:** a bar showing where the time went (embed, filter, BM25, vectors, fuse, group, rerank).
-- **Filters:** the classification list comes from the index. Changing a filter re-runs the search, and you can switch between pre- and post-filtering to see the difference.
+- **Filters:** the classification list comes from the index. Changing a filter re-runs the search (typed filters, like the title and dates, wait for a 0.4 s pause in typing), and you can switch between pre- and post-filtering to see the difference.
 - **Full patent view:** clicking a passage opens the patent, scrolled to that claim or paragraph.
 - **Shareable searches:** the URL holds the whole search, with the same parameters the API takes.
 
-Starting a new search cancels the one still running, so a slow reranked answer can never replace a newer one.
+Starting a new search cancels the one still running, so a slow reranked answer can never replace a newer one. (The browser drops the old answer; the server still finishes computing it, which is why typed filters wait for a pause.) If a search fails, the previous results stay on screen, dimmed and labeled as old. While the API is still starting, the app keeps retrying it every 3 s.
 
 | Endpoint | What it returns |
 |---|---|
@@ -121,7 +121,7 @@ Starting a new search cancels the one still running, so a slow reranked answer c
 | `GET /api/health` | Index size, models loaded, available modes |
 
 Errors:
-- **400** with a readable message for a request that is valid but can't run: `"Not a valid classification prefix: '60B'"`, an unknown patent number, a backwards date range;
+- **400** with a readable message for a request that is valid but can't run: `"Not a valid classification prefix: '60B'"`, an unknown patent number, a backwards date range, a keyword with no searchable word in it (`"the"`, or a code like `"B60B"`, which belongs in the classification filter);
 - **404** for an unknown patent;
 - **422** for wrong parameter types.
 
@@ -134,7 +134,7 @@ Interactive docs are at `/docs`. The API is a thin layer (`create_app(engine)`) 
 Filters: classification prefix (`B60B`, `B60C 11/03`; any of several), keywords that must all appear in the title/abstract, title contains / equals, and a date range.
 
 **Pre-filter vs. post-filter.**
-- `pre`: lookup tables find the matching patents *first* (an inverted index for keywords, a subclass table for CPC, one joined string of all titles). Only those patents' passages are scored.
+- `pre`: lookup tables find the matching patents *first* (an inverted index for keywords, a subclass table for CPC, one joined string of all titles). Only those patents' passages are scored by the vector search. BM25 adds up the query words' columns for all passages and then keeps the matching ones; that is cheap because only passages containing a query word are touched.
 - `post` (the naive way): score everything, keep the top 1,000 passages, then drop the ones that fail the filter.
 
 **Results on the 50k-patent slice of the large data** (199k passages, 16 queries × 3 runs, hybrid mode, query embedding excluded):
@@ -241,13 +241,14 @@ The plain-English queries were **written by the AI assistant (Claude) that helpe
 ### What we learned
 
 - **The reranker helps short, natural-language queries**: +8 points Recall@1, +12 Recall@10 and +0.09 MRR. It ranked the right patent higher for 15 queries and lower for 6. The well-known ms-marco cross-encoders, trained on short web questions, did **not** help. We compared 4 models and several settings; see [`benchmarks/reranker_sweep.md`](benchmarks/reranker_sweep.md).
-- **The reranker hurts claim-length queries.** A claim reuses its own description's exact words, which BM25 rewards. A cross-encoder judges "is this passage about the same thing?", and dozens of near-identical tire patents all are. Giving it 512 tokens instead of 256 did not help, so this isn't a truncation problem.
+- **The reranker hurts claim-length queries.** A claim reuses its own description's exact words, which BM25 rewards. A cross-encoder judges "is this passage about the same thing?", and many related patents are. A spot check of 40 claims: the reranker lost a patent that hybrid search had at #1 17 times, and every time its new #1 was a *different* invention in the same subclass (only 0.09–0.37 word overlap with the right patent's description), not a near-duplicate. Giving it 512 tokens instead of 256 did not help, so this isn't a truncation problem.
 - **So the default is `rerank="auto"`:** rerank when the query has 40 words or fewer. Plain-English queries are at most 24 words, while 93% of claims are longer than 40. When it skips, the response says why. `on` and `off` are still available.
 - **Settings, chosen by measurement:** the top **30** patents, **1** passage each, **256** tokens, on the **CPU** in **float32**. More candidates, passages or tokens cost more and added nothing. The model is saved in float16, which CPUs run 4–8× slower, so we load it in float32 explicitly.
 - **Honest limits:**
   - There is one correct patent per query; real prior-art search has several, so these numbers understate quality.
   - The plain-English set is small (48 queries; one query = 2 points), and its queries were written by an AI, not by examiners.
-  - The claims task favors exact word overlap by design.
+  - The claims task favors exact word overlap by design. It also measures claim → *its own* patent, not claim → *other* similar patents (the prior-art use case), so skipping reranking for claims rests on a proxy.
+  - The reranker and its settings were chosen on the same 48 queries reported here (there is no held-out set), so the gain is likely optimistic. 15 better vs 6 worse is p ≈ 0.08 on a two-sided sign test.
 
 ---
 
@@ -341,10 +342,10 @@ tests/integration/     full pipeline, CLI, API, evaluation, benchmark, Postgres,
 ```
 
 ```bash
-pytest                    # 228 unit + integration tests, ~2 s, no model download (5 Postgres tests skip)
+pytest                    # 235 unit + integration tests, ~2 s, no model download (5 Postgres tests skip)
 pytest -m slow            # also check the two real models (downloads them)
 pytest -m postgres        # the PoC against real Postgres (needs PATENT_PG_DSN, see part2_scale/poc)
-cd web && npm test        # 48 web app tests (Vitest + Testing Library)
+cd web && npm test        # 56 web app tests (Vitest + Testing Library)
 docker compose run --rm api pytest     # the Python tests inside the container
 ```
 

@@ -3,7 +3,8 @@
 Phase 1 (hybrid search) is fast because the query and each passage are turned
 into vectors *separately*. A cross-encoder reads the query and a passage
 *together*, so it can judge the match much more precisely, but it costs a full
-model run per passage. So it only runs on the ~100 best patents from phase 1.
+model run per passage. So it only runs on the best phase-1 patents (30 by
+default, RERANK_CANDIDATES in config.py).
 """
 
 from __future__ import annotations

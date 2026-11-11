@@ -14,6 +14,7 @@ const full: SearchState = {
   kinds: ["claim", "description"],
   topK: 25,
   rerank: "off",
+  rerankCandidates: 100,
 };
 
 describe("toParams / fromParams", () => {
@@ -27,6 +28,7 @@ describe("toParams / fromParams", () => {
     expect(p.get("title_exact")).toBe("true");
     expect(p.get("date_from")).toBe("2024-02-01");
     expect(p.get("top_k")).toBe("25");
+    expect(p.get("rerank_candidates")).toBe("100");
   });
 
   it("leaves out defaults and blanks", () => {
@@ -35,9 +37,20 @@ describe("toParams / fromParams", () => {
   });
 
   it("falls back to defaults for unknown or malformed values", () => {
-    const s = fromParams(new URLSearchParams("q=x&mode=fuzzy&top_k=999&date_from=yesterday&kinds=figure&rerank=maybe"));
+    const s = fromParams(
+      new URLSearchParams("q=x&mode=fuzzy&top_k=999&date_from=yesterday&kinds=figure&rerank=maybe&rerank_candidates=lots"),
+    );
     expect(s).toEqual({ ...DEFAULT_STATE, q: "x", topK: 100 });
     expect(fromParams(new URLSearchParams("top_k=0")).topK).toBe(1);
+  });
+});
+
+describe("the README's two-phase example URL", () => {
+  it("survives a round trip", () => {
+    const qs = "q=bicycle+spoke&top_k=30&rerank=on&rerank_candidates=100";
+    const s = fromParams(new URLSearchParams(qs));
+    expect(s).toMatchObject({ topK: 30, rerank: "on", rerankCandidates: 100 });
+    expect(toParams(s).toString()).toBe(qs);
   });
 });
 

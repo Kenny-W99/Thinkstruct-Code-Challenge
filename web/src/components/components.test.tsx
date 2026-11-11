@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_STATE } from "../lib/query";
@@ -101,7 +101,7 @@ describe("FilterPanel", () => {
     const onChange = vi.fn();
     const { rerender } = render(<FilterPanel state={DEFAULT_STATE} facets={facets} onChange={onChange} />);
     await userEvent.click(screen.getByRole("checkbox", { name: /B60B/ }));
-    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_STATE, cpc: ["B60B"] });
+    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_STATE, cpc: ["B60B"] }, { debounce: false });
 
     rerender(<FilterPanel state={{ ...DEFAULT_STATE, cpc: ["B60B", "B60C 11/03"], keyword: ["groove"] }} facets={facets} onChange={onChange} />);
     expect(screen.getByText("3")).toHaveClass("count-badge");
@@ -110,11 +110,20 @@ describe("FilterPanel", () => {
     expect(onChange).toHaveBeenLastCalledWith(DEFAULT_STATE);
   });
 
+  it("marks typed filters (title, dates) so the search can wait for a pause", () => {
+    const onChange = vi.fn();
+    render(<FilterPanel state={DEFAULT_STATE} facets={null} onChange={onChange} />);
+    fireEvent.change(screen.getByRole("textbox", { name: "Title" }), { target: { value: "w" } });
+    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_STATE, title: "w" }, { debounce: true });
+    fireEvent.change(screen.getByLabelText("Published from"), { target: { value: "2024-06-01" } });
+    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_STATE, dateFrom: "2024-06-01" }, { debounce: true });
+  });
+
   it("switches between pre- and post-filtering", async () => {
     const onChange = vi.fn();
     render(<FilterPanel state={DEFAULT_STATE} facets={null} onChange={onChange} />);
     await userEvent.click(screen.getByRole("radio", { name: "Filter after" }));
-    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_STATE, strategy: "post" });
+    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_STATE, strategy: "post" }, { debounce: false });
   });
 });
 

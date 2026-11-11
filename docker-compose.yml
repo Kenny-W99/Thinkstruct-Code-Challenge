@@ -2,10 +2,13 @@
 #
 #   docker compose up --build          web app  http://localhost:8080
 #                                      API      http://localhost:8000/docs
-#                                      Postgres localhost:5432 (Part 2 PoC)
 #
 #   docker compose run --rm api pytest            # the Python tests, in the container
+#   docker compose up -d db                       # Part 2 PoC database, 127.0.0.1:5432
 #   docker compose --profile poc run --rm poc     # Part 2 PoC: load patents into Postgres
+#
+# Postgres is only for the Part 2 PoC, so it is in the `poc` profile: a plain
+# `up` doesn't start it or take port 5432 (naming it, as above, starts it).
 #
 # The first `up` builds the search index into the `artifacts` volume. Docker
 # on a Mac has no GPU, so embedding the 33k passages on CPU takes a while
@@ -33,6 +36,7 @@ services:
       - api
 
   db:
+    profiles: ["poc"]
     image: pgvector/pgvector:pg17
     environment:
       # Local demo database only; these are not real credentials.
@@ -40,7 +44,8 @@ services:
       POSTGRES_PASSWORD: patents
       POSTGRES_DB: patents
     ports:
-      - "5432:5432"
+      # Only this machine can connect: the password below is a demo one.
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

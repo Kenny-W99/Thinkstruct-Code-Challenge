@@ -37,6 +37,17 @@ describe("App", () => {
     expect(new URLSearchParams(window.location.search).getAll("cpc")).toEqual(["B60B"]);
   });
 
+  it("waits for typing to pause before re-running the search for the Title filter", async () => {
+    const search = vi.fn().mockResolvedValue(response());
+    render(<App client={fakeApi({ search })} />);
+    await userEvent.type(screen.getByRole("textbox", { name: "Search query" }), "spoke{Enter}");
+    await screen.findByRole("button", { name: "Wheel Rim" });
+    await userEvent.type(screen.getByRole("textbox", { name: "Title" }), "wheel");
+    expect(search).toHaveBeenCalledTimes(1); // nothing sent per keystroke
+    await waitFor(() => expect(search).toHaveBeenCalledTimes(2));
+    expect((search.mock.calls[1][0] as SearchState).title).toBe("wheel");
+  });
+
   it("runs the search in the URL on load", async () => {
     window.history.replaceState(null, "", "/?q=spoke&mode=bm25&rerank=off");
     const search = vi.fn().mockResolvedValue(response({ mode: "bm25" }));
@@ -51,6 +62,30 @@ describe("App", () => {
     render(<App client={fakeApi({ search })} />);
     await userEvent.type(screen.getByRole("textbox", { name: "Search query" }), "wheel{Enter}");
     expect(await screen.findByRole("alert")).toHaveTextContent("Not a valid classification prefix: '60B'");
+  });
+
+  it("marks the previous results as old when the next search fails", async () => {
+    const search = vi
+      .fn()
+      .mockResolvedValueOnce(response())
+      .mockRejectedValueOnce(new ApiError(400, "Not a valid classification prefix: '60B'"));
+    const { container } = render(<App client={fakeApi({ search })} />);
+    await userEvent.type(screen.getByRole("textbox", { name: "Search query" }), "wheel{Enter}");
+    await screen.findByRole("button", { name: "Wheel Rim" });
+    expect(container.querySelector("main.results")).not.toHaveClass("is-stale");
+
+    await userEvent.type(screen.getByRole("textbox", { name: "More classification prefixes" }), "60B{Enter}");
+    expect(await screen.findByRole("alert")).toHaveTextContent("from the previous search");
+    expect(container.querySelector("main.results")).toHaveClass("is-stale");
+  });
+
+  it("shows a top_k from a shared URL even if the menu doesn't list it", async () => {
+    window.history.replaceState(null, "", "/?q=spoke&top_k=30&rerank_candidates=100");
+    const search = vi.fn().mockResolvedValue(response());
+    render(<App client={fakeApi({ search })} />);
+    await screen.findByRole("button", { name: "Wheel Rim" });
+    expect(screen.getByRole("combobox")).toHaveValue("30");
+    expect(search.mock.calls[0][0]).toMatchObject({ topK: 30, rerankCandidates: 100 });
   });
 
   it("shows rank changes after reranking and opens the full patent", async () => {
