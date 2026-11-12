@@ -1,6 +1,6 @@
 # Thinkstruct Patent Search
 
-> **Video walkthrough of Parts 2 and 3 (2 min):** _link to be added_
+> **Video walkthrough of Parts 2 and 3 (2 min):** https://youtu.be/vdkLTOV6Z9Q
 
 | Part | What | Where |
 |---|---|---|
